@@ -247,30 +247,26 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
             <div className='flex justify-between sm:justify-end sm:gap-8'>
                 {/* Model Selection */}
                 <div className="flex gap-2 items-center">
-                    <Label htmlFor="model" className="hidden">
-                        Enable Chat GPT or Gemini
-                    </Label>
                     <span className='text-xs'>ChatGPT</span>
                     <Toggle
                         name='model'
                         checked={isGemini}
                         onChange={(event) => setIsGemini(event.target.checked)}
                         disabled={isLoading}
+                        aria-label="Enable Chat GPT or Gemini"
                     />
                     <span className='text-xs'>Gemini</span>
                 </div>
 
                 {/* Mode Selection */}
                 <div className="flex gap-2 items-center">
-                    <Label htmlFor="mode" className="hidden">
-                        Model Replies in serious or playful manner
-                    </Label>
                     <span className='text-xs'>Playful</span>
                     <Toggle
                         name='mode'
                         checked={isSerious}
                         onChange={(event) => setIsSerious(event.target.checked)}
                         disabled={isLoading}
+                        aria-label="Model Replies in serious or playful manner"
                     />
                     <span className='text-xs'>Serious</span>
                 </div>
