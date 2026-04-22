@@ -31,7 +31,7 @@ export default function Greeting() {
                 className='text-center'
             >
                 <h1 className='text-2xl font-bold'>
-                    {greeting}, {name}
+                    {greeting} {name}
                 </h1>
                 <h2 className='text-sm font-bold'>
                     What is on your mind today?

@@ -22,5 +22,12 @@ class AiRequest(BaseModel):
 
 
 class AiResponse(BaseModel):
-    title: str = ""
     system_response: str = ""
+
+
+class AiTitleRequest(BaseModel):
+    prompt: str = ""
+
+
+class AiTitleResponse(BaseModel):
+    title: str = ""

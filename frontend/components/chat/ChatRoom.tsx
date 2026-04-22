@@ -31,7 +31,7 @@ export default function ChatRoom({chatRecord}: {chatRecord: ChatDataType[]}) {
                             return (
                                 <div
                                     key={idx}
-                                    className={`${messageCls} min-h-10 p-2 max-w-3/4 border border-letter-black dark:border-letter-white rounded-md wrap-break-word`}
+                                    className={`${messageCls} min-h-10 p-2 max-w-3/4 border border-letter-black dark:border-letter-white rounded-md wrap-break-word whitespace-pre-wrap`}
                                 >
                                     {message}
                                 </div>

@@ -7,7 +7,13 @@ from dotenv import load_dotenv
 from src.ai import gemini
 from src.ai.gemini import GeminiModel
 from src.ai.load_system_prompts import load_playful_prompts, load_serious_prompts
-from src.types import AiRequest, AiResponse, RootResponse
+from src.types import (
+    AiRequest,
+    AiResponse,
+    AiTitleRequest,
+    AiTitleResponse,
+    RootResponse,
+)
 
 
 # ---------------------------------------------------------------
@@ -44,6 +50,7 @@ def root() -> RootResponse:
 
 
 # POST
+# Gemini
 @app.post("/gemini")
 def sendMessageToGemini(request: AiRequest):
 
@@ -56,14 +63,10 @@ def sendMessageToGemini(request: AiRequest):
             status_code=500, detail="The model name for Gemini is not defined."
         )
 
-    gemini_model = GeminiModel(system_prompt=system_prompt, model_name=model_name)
-
-    """ Generating title """
-    title = ""
-    if request.is_new_conversation:
-        title = gemini_model.generate_title(
-            user_prompt=request.user_prompt,
-        )
+    gemini_model = GeminiModel(
+        system_prompt=system_prompt,
+        model_name=model_name,
+    )
 
     """ Generating response """
     system_response = gemini_model.chat(
@@ -73,5 +76,22 @@ def sendMessageToGemini(request: AiRequest):
 
     return AiResponse(
         system_response=system_response,
-        title=title,
     )
+
+
+@app.post("/gemini/title")
+def getTitleFromGemini(request: AiTitleRequest) -> AiTitleResponse:
+    model_name = os.getenv("GEMINI_MODEL_NAME")
+    if model_name == None:
+        raise HTTPException(
+            status_code=500, detail="The model name for Gemini is not defined."
+        )
+
+    gemini_model = GeminiModel(
+        system_prompt="",
+        model_name=model_name,
+    )
+
+    title = gemini_model.generate_title(user_prompt=request.prompt)
+
+    return AiTitleResponse(title=title)

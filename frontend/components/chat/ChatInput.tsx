@@ -143,13 +143,26 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
             }
             else if (isNewConversation && !convId) {
 
+                
+                const titleResponse = await fetch(`${fullEndpoint}/title`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        prompt: message
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                const generatedTitleData = await titleResponse.json()
+                if(!titleResponse.ok) throw new Error('Encountered difficulties in generating title for this conversation.')
+
+                
                 setMessage('')
                 const generatedConvId = uuidv4()
-
                 const { error: convError } = await supabase
                     .from('conversations')
                     .insert({
-                        id: generatedConvId, user_id: userId, title: ai_response.title
+                        id: generatedConvId, user_id: userId, title: generatedTitleData.title
                     })
                 if(convError) throw new Error(convError.message)
 
