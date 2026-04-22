@@ -1,3 +1,5 @@
+from typing import Generator, Iterator
+
 from src.ai.base import AiModel
 from google import genai
 from google.genai import types
@@ -25,7 +27,7 @@ class GeminiModel(AiModel):
             return "Untitled conversation"
         return response.text
 
-    def chat(self, history: list[HistoryEntry], user_prompt: str) -> str:
+    def chat(self, history: list[HistoryEntry], user_prompt: str) -> Generator[str]:
 
         history_list: list[types.ContentOrDict] = [
             types.Content(role=entry["role"], parts=[types.Part(text=entry["message"])])
@@ -36,7 +38,8 @@ class GeminiModel(AiModel):
             history=history_list,
             config=types.GenerateContentConfig(system_instruction=self.system_prompt),
         )
-        response = chat.send_message(message=user_prompt)
-        if response.text is None:
-            return "I am currently facing an issue in generating a response. Please try again later."
-        return response.text
+        response = chat.send_message_stream(message=user_prompt)
+        for chunk in response:
+            text = chunk.text
+            if text is not None:
+                yield text

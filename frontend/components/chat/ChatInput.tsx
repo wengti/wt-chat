@@ -51,11 +51,10 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
 
         try {
             if (message === '') {
-                setError('No input message.')
-                return
+                throw new Error('No input message.')
             }
-            
-            if(!isNewConversation){
+
+            if (!isNewConversation) {
                 setMessage('')
             }
 
@@ -106,14 +105,17 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                     'Content-Type': 'application/json'
                 }
             })
-            const ai_response = await res.json()
+
             if (!res.ok) {
-                setError(ai_response.detail)
+                const responseData = await res.json()
+                throw new Error(responseData.detail)
             }
 
+            if (!res.body) {
+                throw new Error('Unable to retrieve the body of the response in generating a message.')
+            }
 
-            /* Receive the data */
-            /* Update the internal state for display */
+            /* Add an empty placeholder to store the streamed chunk */
             if (setChatRecord && convId) {
                 setChatRecord((prevChatRecord) => {
                     const newChatRecord = structuredClone(prevChatRecord)
@@ -122,11 +124,45 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                         conversation_id: convId,
                         user_id: userId,
                         role: 'model',
-                        message: ai_response.system_response
+                        message: ''
                     })
                     return newChatRecord
                 })
             }
+
+
+            const reader = res.body.getReader()
+            const decoder = new TextDecoder()
+            let response_message = ''
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break /* Final value is undefined therefore must be checked first before proceeding*/
+
+                const response_chunk = decoder.decode(value, { stream: true })
+                response_message += response_chunk
+
+                /* Receive the data */
+                /* Update the internal state for display */
+                if (setChatRecord && convId) {
+                    setChatRecord((prevChatRecord) => {
+                        const newChatRecord = structuredClone(prevChatRecord)
+                        newChatRecord[newChatRecord.length - 1].message = response_message
+                        return newChatRecord
+                    })
+                }
+
+                /* Delay to slowly streamout the response */
+                if (!isNewConversation) {
+                    await new Promise((resolve) => {
+                        setTimeout(() => {
+                            resolve("")
+                        }, 30)
+                    })
+                }
+
+
+            }
+
 
 
             /* Once reaches here: consider the conversation cycle is completed */
@@ -137,13 +173,13 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                     .from('messages')
                     .insert([
                         { conversation_id: convId, user_id: userId, role: 'user', message: message },
-                        { conversation_id: convId, user_id: userId, role: 'model', message: ai_response.system_response }
+                        { conversation_id: convId, user_id: userId, role: 'model', message: response_message }
                     ])
-                if(dbError) throw new Error(dbError.message)
+                if (dbError) throw new Error(dbError.message)
             }
             else if (isNewConversation && !convId) {
 
-                
+
                 const titleResponse = await fetch(`${fullEndpoint}/title`, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -154,9 +190,9 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                     }
                 })
                 const generatedTitleData = await titleResponse.json()
-                if(!titleResponse.ok) throw new Error('Encountered difficulties in generating title for this conversation.')
+                if (!titleResponse.ok) throw new Error('Encountered difficulties in generating title for this conversation.')
 
-                
+
                 setMessage('')
                 const generatedConvId = uuidv4()
                 const { error: convError } = await supabase
@@ -164,15 +200,15 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                     .insert({
                         id: generatedConvId, user_id: userId, title: generatedTitleData.title
                     })
-                if(convError) throw new Error(convError.message)
+                if (convError) throw new Error(convError.message)
 
                 const { error: dbError } = await supabase
                     .from('messages')
                     .insert([
                         { conversation_id: generatedConvId, user_id: userId, role: 'user', message: message },
-                        { conversation_id: generatedConvId, user_id: userId, role: 'model', message: ai_response.system_response }
+                        { conversation_id: generatedConvId, user_id: userId, role: 'model', message: response_message }
                     ])
-                if(dbError) throw new Error(dbError.message)
+                if (dbError) throw new Error(dbError.message)
 
                 router.push(`/${generatedConvId}`)
 

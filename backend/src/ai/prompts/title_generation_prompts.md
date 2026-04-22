@@ -1,1 +1,1 @@
-Generate a short and concise title that describe the topic of this conversation beginning with the user's sent message.
+Generate a short and concise title that describe the topic of this conversation beginning with the user's sent message in not more than 10 words.

@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 
 from src.ai import gemini
@@ -45,14 +46,14 @@ app.add_middleware(
 
 
 @app.get("/")
-def root() -> RootResponse:
+def root(response_model=RootResponse):
     return RootResponse()
 
 
 # POST
 # Gemini
 @app.post("/gemini")
-def sendMessageToGemini(request: AiRequest):
+def sendMessageToGemini(request: AiRequest, response_model=StreamingResponse):
 
     system_prompt = (
         load_serious_prompts() if request.is_serious else load_playful_prompts()
@@ -69,18 +70,19 @@ def sendMessageToGemini(request: AiRequest):
     )
 
     """ Generating response """
-    system_response = gemini_model.chat(
-        history=request.history,
-        user_prompt=request.user_prompt,
-    )
+    """ Any function that contains yield becomes a generator, and the caller iterates over it. """
 
-    return AiResponse(
-        system_response=system_response,
+    return StreamingResponse(
+        gemini_model.chat(
+            history=request.history,
+            user_prompt=request.user_prompt,
+        ),
+        media_type="text/plain",
     )
 
 
 @app.post("/gemini/title")
-def getTitleFromGemini(request: AiTitleRequest) -> AiTitleResponse:
+def getTitleFromGemini(request: AiTitleRequest, response_model=AiTitleResponse):
     model_name = os.getenv("GEMINI_MODEL_NAME")
     if model_name == None:
         raise HTTPException(
