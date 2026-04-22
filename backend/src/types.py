@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Literal, TypedDict
 from pydantic import BaseModel
 
 
@@ -19,6 +19,7 @@ class AiRequest(BaseModel):
     history: list[HistoryEntry]
     is_serious: bool = True
     is_new_conversation: bool = True
+    model_name: Literal["gpt", "gemini"]
 
 
 class AiResponse(BaseModel):
@@ -27,6 +28,7 @@ class AiResponse(BaseModel):
 
 class AiTitleRequest(BaseModel):
     prompt: str = ""
+    model_name: Literal["gpt", "gemini"]
 
 
 class AiTitleResponse(BaseModel):

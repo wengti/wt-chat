@@ -86,20 +86,21 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
             })
 
 
-            const endpoint = isGemini ? 'gemini' : 'gpt'
-            const fullEndpoint = `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}`
+            const model_name = isGemini ? 'gemini' : 'gpt'
+            const baseURLStr = process.env.NEXT_PUBLIC_API_URL
 
             /* Past conversation should be from above a level which houses the conversations and chat inputs */
             /* Use past conversation + current messages */
 
             /* Send messages to the backend */
-            const res = await fetch(fullEndpoint, {
+            const res = await fetch(`${baseURLStr}/chat`, {
                 method: 'POST',
                 body: JSON.stringify({
                     user_prompt: message,
                     history: chatRecordToAI,
                     is_serious: isSerious,
-                    is_new_conversation: isNewConversation
+                    is_new_conversation: isNewConversation,
+                    model_name: model_name
                 }),
                 headers: {
                     'Content-Type': 'application/json'
@@ -180,10 +181,11 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
             else if (isNewConversation && !convId) {
 
 
-                const titleResponse = await fetch(`${fullEndpoint}/title`, {
+                const titleResponse = await fetch(`${baseURLStr}/title`, {
                     method: 'POST',
                     body: JSON.stringify({
-                        prompt: message
+                        prompt: message,
+                        model_name: model_name
                     }),
                     headers: {
                         'Content-Type': 'application/json'

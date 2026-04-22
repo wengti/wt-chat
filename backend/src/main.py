@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 from src.ai import gemini
 from src.ai.gemini import GeminiModel
+from src.ai.gpt import GPTModel
 from src.ai.load_system_prompts import load_playful_prompts, load_serious_prompts
 from src.types import (
     AiRequest,
@@ -27,7 +28,6 @@ load_dotenv()
 # ---------------------------------------------------------------
 
 front_end_url = os.getenv("FRONT_END_URL", "")
-print(front_end_url)
 app = FastAPI()
 
 app.add_middleware(
@@ -52,28 +52,44 @@ def root(response_model=RootResponse):
 
 # POST
 # Gemini
-@app.post("/gemini")
+@app.post("/chat")
 def sendMessageToGemini(request: AiRequest, response_model=StreamingResponse):
 
     system_prompt = (
         load_serious_prompts() if request.is_serious else load_playful_prompts()
     )
-    model_name = os.getenv("GEMINI_MODEL_NAME")
-    if model_name == None:
-        raise HTTPException(
-            status_code=500, detail="The model name for Gemini is not defined."
+
+    model = None
+
+    """ Create client """
+    if request.model_name == "gemini":
+        model_name = os.getenv("GEMINI_MODEL_NAME")
+        if model_name == None:
+            raise HTTPException(
+                status_code=500, detail="The model name for Gemini is not defined."
+            )
+        model = GeminiModel(
+            system_prompt=system_prompt,
+            model_name=model_name,
+        )
+    elif request.model_name == "gpt":
+        model_name = os.getenv("OPENAI_MODEL_NAME")
+        if model_name == None:
+            raise HTTPException(
+                status_code=500, detail="The model name for Gemini is not defined."
+            )
+        model = GPTModel(
+            system_prompt=system_prompt,
+            model_name=model_name,
         )
 
-    gemini_model = GeminiModel(
-        system_prompt=system_prompt,
-        model_name=model_name,
-    )
+    if model == None:
+        raise HTTPException(status_code=500, detail="Fail to create an AI client.")
 
     """ Generating response """
     """ Any function that contains yield becomes a generator, and the caller iterates over it. """
-
     return StreamingResponse(
-        gemini_model.chat(
+        model.chat(
             history=request.history,
             user_prompt=request.user_prompt,
         ),
@@ -81,19 +97,35 @@ def sendMessageToGemini(request: AiRequest, response_model=StreamingResponse):
     )
 
 
-@app.post("/gemini/title")
+@app.post("/title")
 def getTitleFromGemini(request: AiTitleRequest, response_model=AiTitleResponse):
-    model_name = os.getenv("GEMINI_MODEL_NAME")
-    if model_name == None:
-        raise HTTPException(
-            status_code=500, detail="The model name for Gemini is not defined."
+
+    model = None
+    """ Create client """
+    if request.model_name == "gemini":
+        model_name = os.getenv("GEMINI_MODEL_NAME")
+        if model_name == None:
+            raise HTTPException(
+                status_code=500, detail="The model name for Gemini is not defined."
+            )
+        model = GeminiModel(
+            system_prompt="",
+            model_name=model_name,
+        )
+    elif request.model_name == "gpt":
+        model_name = os.getenv("OPENAI_MODEL_NAME")
+        if model_name == None:
+            raise HTTPException(
+                status_code=500, detail="The model name for Gemini is not defined."
+            )
+        model = GPTModel(
+            system_prompt="",
+            model_name=model_name,
         )
 
-    gemini_model = GeminiModel(
-        system_prompt="",
-        model_name=model_name,
-    )
+    if model == None:
+        raise HTTPException(status_code=500, detail="Fail to create an AI client.")
 
-    title = gemini_model.generate_title(user_prompt=request.prompt)
+    title = model.generate_title(user_prompt=request.prompt)
 
     return AiTitleResponse(title=title)

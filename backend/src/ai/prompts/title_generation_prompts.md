@@ -1,1 +1,2 @@
-Generate a short and concise title that describe the topic of this conversation beginning with the user's sent message in not more than 10 words.
+Generate a short and concise title in plain text only (no markdown) that describe the topic of this conversation beginning with the user's sent message in not more than 10 words. 
+Do not try to break line or make any generated word in the title to be bold.
