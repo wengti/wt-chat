@@ -10,7 +10,7 @@ export default async function Home() {
         <>
             <div className='grow flex flex-col gap-8 justify-center'>
                 <Greeting />
-                <ChatInput isNewConversation={true} />
+                <ChatInput isNewConversation={true} convId={null} chatRecord={[]} setChatRecord={null}/>
             </div>
         </>
     )

@@ -30,4 +30,40 @@ to authenticated
 using (auth.uid() = id)
 
 
+/* ------------- */
+/* Table - conversations */
+/* ------------- */
+
+/* ----  Policy  ---- */
+/* Read */
+alter policy "only authenticatead can access their own conversation"
+on "public"."conversations"
+to authenticated
+using (auth.uid() = user_id)
+
+/* Insert */
+alter policy "Only authenticated user can insert data for themselves"
+on "public"."conversations"
+to authenticated
+with check (auth.uid() = user_id)
+
+
+/* ------------- */
+/* Table - messages */
+/* ------------- */
+alter policy "Only authenticated user can insert data for themselves"
+on "public"."messages"
+to authenticated
+with check (auth.uid() = user_id)
+
+/* ----  Policy  ---- */
+/* Read */
+alter policy "only authenticatead can access their own message"
+on "public"."messages"
+to authenticated
+using (auth.uid() = user_id)
+
+
+
+
 

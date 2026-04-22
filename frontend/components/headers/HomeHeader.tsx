@@ -6,16 +6,18 @@ import Link from "next/link";
 import { LogoutButton } from "../supabase-components/logout-button";
 import { Avatar } from "../tailgrids/core/avatar";
 import { UserContext } from "@/context/UserContextClientComponent";
-import { useContext } from "react";
 import Sidebar from "../sidebar/Sidebar";
+import { useContext } from "react";
 
 export default function HomeHeader() {
 
     const { name, id, picture } = useContext(UserContext)
 
+    
+
 
     return (
-        <header className='h-(--header-y) flex justify-between items-center bg-card-white dark:bg-card-black px-2 py-2'>
+        <header className={`h-(--header-y) flex justify-between items-center bg-card-white dark:bg-card-black px-2 py-2 sticky top-0 z-2`}>
             <Link href='/' className='h-full'>
                 <Image
                     priority
