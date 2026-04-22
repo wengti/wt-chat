@@ -54,8 +54,11 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                 setError('No input message.')
                 return
             }
+            
+            if(!isNewConversation){
+                setMessage('')
+            }
 
-            setMessage('')
             setIsLoading(true)
             setError(null)
 
@@ -140,6 +143,7 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
             }
             else if (isNewConversation && !convId) {
 
+                setMessage('')
                 const generatedConvId = uuidv4()
 
                 const { error: convError } = await supabase
