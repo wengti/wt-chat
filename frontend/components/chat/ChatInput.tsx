@@ -10,6 +10,8 @@ import { ChatDataType } from "./ChatRoomPageServerComponent"
 import { UserContext } from "@/context/UserContextClientComponent"
 import { createClient } from "@/lib/supabase/client"
 import { Spinner } from "../tailgrids/core"
+import { v4 as uuidv4 } from 'uuid'
+import { useRouter } from "next/navigation"
 
 
 export type ChatInputPropsType = {
@@ -31,13 +33,15 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
 
     const bottomRef = useRef<HTMLDivElement>(null!)
 
+    const router = useRouter()
+
     useEffect(() => {
         const id = setTimeout(() => {
             bottomRef.current.scrollIntoView({
                 behavior: 'smooth'
             })
         }, 1000)
-        return () => {clearTimeout(id)}
+        return () => { clearTimeout(id) }
 
     }, [chatRecord])
 
@@ -70,9 +74,6 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                     return newChatRecord
                 })
             }
-            else {
-                throw new Error('Unable to retrieve either the chat record setting function or conversation id.')
-            }
 
             /* Set the data to be sent to AI */
             const chatRecordToAI = chatRecord.map((record) => {
@@ -86,66 +87,83 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
             const endpoint = isGemini ? 'gemini' : 'gpt'
             const fullEndpoint = `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}`
 
-            if (isNewConversation) {
-                /* Hit new api to generate a title for this conversation */
+            /* Past conversation should be from above a level which houses the conversations and chat inputs */
+            /* Use past conversation + current messages */
 
-                /* redirect the user to a new page */
+            /* Send messages to the backend */
+            const res = await fetch(fullEndpoint, {
+                method: 'POST',
+                body: JSON.stringify({
+                    user_prompt: message,
+                    history: chatRecordToAI,
+                    is_serious: isSerious,
+                    is_new_conversation: isNewConversation
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            const ai_response = await res.json()
+            if (!res.ok) {
+                setError(ai_response.detail)
             }
-            else {
-                /* Past conversation should be from above a level which houses the conversations and chat inputs */
-                /* Use past conversation + current messages */
-
-                /* Send messages to the backend */
-                const res = await fetch(fullEndpoint, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        user_prompt: message,
-                        history: chatRecordToAI,
-                        is_serious: isSerious
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
-                const ai_response = await res.json()
-                if (!res.ok) {
-                    setError(ai_response.detail)
-                }
 
 
-                /* Receive the data */
-                /* Update the internal state for display */
-                if (setChatRecord && convId) {
-                    setChatRecord((prevChatRecord) => {
-                        const newChatRecord = structuredClone(prevChatRecord)
-                        newChatRecord.push({
-                            created_at: new Date(),
-                            conversation_id: convId,
-                            user_id: userId,
-                            role: 'model',
-                            message: ai_response.system_response
-                        })
-                        return newChatRecord
+            /* Receive the data */
+            /* Update the internal state for display */
+            if (setChatRecord && convId) {
+                setChatRecord((prevChatRecord) => {
+                    const newChatRecord = structuredClone(prevChatRecord)
+                    newChatRecord.push({
+                        created_at: new Date(),
+                        conversation_id: convId,
+                        user_id: userId,
+                        role: 'model',
+                        message: ai_response.system_response
                     })
-                }
-                else {
-                    throw new Error('Unable to retrieve either the chat record setting function or conversation id.')
-                }
+                    return newChatRecord
+                })
+            }
 
 
-                /* Once reaches here: consider the conversation cycle is completed */
-                /* Finally then update the database */
-                const supabase = createClient()
+            /* Once reaches here: consider the conversation cycle is completed */
+            /* Finally then update the database */
+            const supabase = createClient()
+            if (!isNewConversation) {
                 const { error: dbError } = await supabase
                     .from('messages')
                     .insert([
                         { conversation_id: convId, user_id: userId, role: 'user', message: message },
                         { conversation_id: convId, user_id: userId, role: 'model', message: ai_response.system_response }
                     ])
-
-                setIsLoading(false)
+                if(dbError) throw new Error(dbError.message)
             }
+            else if (isNewConversation && !convId) {
+
+                const generatedConvId = uuidv4()
+
+                const { error: convError } = await supabase
+                    .from('conversations')
+                    .insert({
+                        id: generatedConvId, user_id: userId, title: ai_response.title
+                    })
+                if(convError) throw new Error(convError.message)
+
+                const { error: dbError } = await supabase
+                    .from('messages')
+                    .insert([
+                        { conversation_id: generatedConvId, user_id: userId, role: 'user', message: message },
+                        { conversation_id: generatedConvId, user_id: userId, role: 'model', message: ai_response.system_response }
+                    ])
+                if(dbError) throw new Error(dbError.message)
+
+                router.push(`/${generatedConvId}`)
+
+            }
+
+            setIsLoading(false)
         }
+
         catch (error) {
             setIsLoading(false)
             if (error instanceof Error) setError(error.message)

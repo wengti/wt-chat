@@ -57,8 +57,21 @@ def sendMessageToGemini(request: AiRequest):
         )
 
     gemini_model = GeminiModel(system_prompt=system_prompt, model_name=model_name)
+
+    """ Generating title """
+    title = ""
+    if request.is_new_conversation:
+        title = gemini_model.generate_title(
+            user_prompt=request.user_prompt,
+        )
+
+    """ Generating response """
     system_response = gemini_model.chat(
-        history=request.history, user_prompt=request.user_prompt
+        history=request.history,
+        user_prompt=request.user_prompt,
     )
 
-    return AiResponse(system_response=system_response)
+    return AiResponse(
+        system_response=system_response,
+        title=title,
+    )
