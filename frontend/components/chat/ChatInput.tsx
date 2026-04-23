@@ -99,7 +99,6 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                     user_prompt: message,
                     history: chatRecordToAI,
                     is_serious: isSerious,
-                    is_new_conversation: isNewConversation,
                     model_name: model_name
                 }),
                 headers: {

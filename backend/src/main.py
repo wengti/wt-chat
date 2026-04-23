@@ -11,7 +11,6 @@ from src.ai.gpt import GPTModel
 from src.ai.load_system_prompts import load_playful_prompts, load_serious_prompts
 from src.types import (
     AiRequest,
-    AiResponse,
     AiTitleRequest,
     AiTitleResponse,
     RootResponse,
@@ -55,29 +54,28 @@ def root(response_model=RootResponse):
 @app.post("/chat")
 def sendMessageToGemini(request: AiRequest, response_model=StreamingResponse):
 
-    system_prompt = (
-        load_serious_prompts() if request.is_serious else load_playful_prompts()
-    )
+    if not request.user_prompt:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid input prompt.",
+        )
 
-    model = None
+    system_prompt = load_serious_prompts() if request.is_serious else load_playful_prompts()
 
     """ Create client """
+    model = None  # Protected by request.model_name is typed by Literal['gemini', 'gpt'] -> will never be none
     if request.model_name == "gemini":
-        model_name = os.getenv("GEMINI_MODEL_NAME")
+        model_name = os.getenv("GEMINI_MODEL_NAME", None)
         if model_name == None:
-            raise HTTPException(
-                status_code=500, detail="The model name for Gemini is not defined."
-            )
+            raise HTTPException(status_code=500, detail="The model name for Gemini is not defined.")
         model = GeminiModel(
             system_prompt=system_prompt,
             model_name=model_name,
         )
     elif request.model_name == "gpt":
-        model_name = os.getenv("OPENAI_MODEL_NAME")
+        model_name = os.getenv("OPENAI_MODEL_NAME", None)
         if model_name == None:
-            raise HTTPException(
-                status_code=500, detail="The model name for Gemini is not defined."
-            )
+            raise HTTPException(status_code=500, detail="The model name for Gemini is not defined.")
         model = GPTModel(
             system_prompt=system_prompt,
             model_name=model_name,
@@ -100,14 +98,18 @@ def sendMessageToGemini(request: AiRequest, response_model=StreamingResponse):
 @app.post("/title")
 def getTitleFromGemini(request: AiTitleRequest, response_model=AiTitleResponse):
 
-    model = None
+    if not request.prompt:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid input prompt.",
+        )
+
     """ Create client """
+    model = None  # Protected by request.model_name is typed by Literal['gemini', 'gpt'] -> will never be none
     if request.model_name == "gemini":
         model_name = os.getenv("GEMINI_MODEL_NAME")
         if model_name == None:
-            raise HTTPException(
-                status_code=500, detail="The model name for Gemini is not defined."
-            )
+            raise HTTPException(status_code=500, detail="The model name for Gemini is not defined.")
         model = GeminiModel(
             system_prompt="",
             model_name=model_name,
@@ -115,9 +117,7 @@ def getTitleFromGemini(request: AiTitleRequest, response_model=AiTitleResponse):
     elif request.model_name == "gpt":
         model_name = os.getenv("OPENAI_MODEL_NAME")
         if model_name == None:
-            raise HTTPException(
-                status_code=500, detail="The model name for Gemini is not defined."
-            )
+            raise HTTPException(status_code=500, detail="The model name for Gemini is not defined.")
         model = GPTModel(
             system_prompt="",
             model_name=model_name,
