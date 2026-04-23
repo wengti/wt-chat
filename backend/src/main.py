@@ -54,78 +54,102 @@ def root(response_model=RootResponse):
 @app.post("/chat")
 def sendMessageToGemini(request: AiRequest, response_model=StreamingResponse):
 
-    if not request.user_prompt:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid input prompt.",
+    try:
+        if not request.user_prompt:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid input prompt.",
+            )
+
+        system_prompt = (
+            load_serious_prompts() if request.is_serious else load_playful_prompts()
         )
 
-    system_prompt = load_serious_prompts() if request.is_serious else load_playful_prompts()
+        """ Create client """
+        model = None  # Protected by request.model_name is typed by Literal['gemini', 'gpt'] -> will never be none
+        if request.model_name == "gemini":
+            model_name = os.getenv("GEMINI_MODEL_NAME", None)
+            if model_name == None:
+                raise HTTPException(
+                    status_code=500, detail="The model name for Gemini is not defined."
+                )
+            model = GeminiModel(
+                system_prompt=system_prompt,
+                model_name=model_name,
+            )
+        elif request.model_name == "gpt":
+            model_name = os.getenv("OPENAI_MODEL_NAME", None)
+            if model_name == None:
+                raise HTTPException(
+                    status_code=500, detail="The model name for GPT is not defined."
+                )
+            model = GPTModel(
+                system_prompt=system_prompt,
+                model_name=model_name,
+            )
 
-    """ Create client """
-    model = None  # Protected by request.model_name is typed by Literal['gemini', 'gpt'] -> will never be none
-    if request.model_name == "gemini":
-        model_name = os.getenv("GEMINI_MODEL_NAME", None)
-        if model_name == None:
-            raise HTTPException(status_code=500, detail="The model name for Gemini is not defined.")
-        model = GeminiModel(
-            system_prompt=system_prompt,
-            model_name=model_name,
+        if model == None:
+            raise HTTPException(status_code=500, detail="Fail to create an AI client.")
+
+        """ Generating response """
+        """ Any function that contains yield becomes a generator, and the caller iterates over it. """
+
+        return StreamingResponse(
+            model.chat(
+                history=request.history,
+                user_prompt=request.user_prompt,
+            ),
+            media_type="text/plain",
         )
-    elif request.model_name == "gpt":
-        model_name = os.getenv("OPENAI_MODEL_NAME", None)
-        if model_name == None:
-            raise HTTPException(status_code=500, detail="The model name for Gemini is not defined.")
-        model = GPTModel(
-            system_prompt=system_prompt,
-            model_name=model_name,
-        )
+    except HTTPException:
+        raise
 
-    if model == None:
-        raise HTTPException(status_code=500, detail="Fail to create an AI client.")
-
-    """ Generating response """
-    """ Any function that contains yield becomes a generator, and the caller iterates over it. """
-    return StreamingResponse(
-        model.chat(
-            history=request.history,
-            user_prompt=request.user_prompt,
-        ),
-        media_type="text/plain",
-    )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))  # Bad Gateway
 
 
 @app.post("/title")
 def getTitleFromGemini(request: AiTitleRequest, response_model=AiTitleResponse):
 
-    if not request.prompt:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid input prompt.",
-        )
+    try:
+        if not request.prompt:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid input prompt.",
+            )
 
-    """ Create client """
-    model = None  # Protected by request.model_name is typed by Literal['gemini', 'gpt'] -> will never be none
-    if request.model_name == "gemini":
-        model_name = os.getenv("GEMINI_MODEL_NAME")
-        if model_name == None:
-            raise HTTPException(status_code=500, detail="The model name for Gemini is not defined.")
-        model = GeminiModel(
-            system_prompt="",
-            model_name=model_name,
-        )
-    elif request.model_name == "gpt":
-        model_name = os.getenv("OPENAI_MODEL_NAME")
-        if model_name == None:
-            raise HTTPException(status_code=500, detail="The model name for Gemini is not defined.")
-        model = GPTModel(
-            system_prompt="",
-            model_name=model_name,
-        )
+        """ Create client """
+        model = None  # Protected by request.model_name is typed by Literal['gemini', 'gpt'] -> will never be none
+        if request.model_name == "gemini":
+            model_name = os.getenv("GEMINI_MODEL_NAME")
+            if model_name == None:
+                raise HTTPException(
+                    status_code=500, detail="The model name for Gemini is not defined."
+                )
+            model = GeminiModel(
+                system_prompt="",
+                model_name=model_name,
+            )
+        elif request.model_name == "gpt":
+            model_name = os.getenv("OPENAI_MODEL_NAME")
+            if model_name == None:
+                raise HTTPException(
+                    status_code=500, detail="The model name for GPT is not defined."
+                )
+            model = GPTModel(
+                system_prompt="",
+                model_name=model_name,
+            )
 
-    if model == None:
-        raise HTTPException(status_code=500, detail="Fail to create an AI client.")
+        if model == None:
+            raise HTTPException(status_code=500, detail="Fail to create an AI client.")
 
-    title = model.generate_title(user_prompt=request.prompt)
+        title = model.generate_title(user_prompt=request.prompt)
 
-    return AiTitleResponse(title=title)
+        return AiTitleResponse(title=title)
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))  # Bad Gateway
