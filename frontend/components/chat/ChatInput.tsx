@@ -35,6 +35,7 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
 
     const router = useRouter()
 
+    /* Scroll to bottom after first rendering */
     useEffect(() => {
         const id = setTimeout(() => {
             bottomRef.current.scrollIntoView({
@@ -46,18 +47,19 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
     }, [chatRecord])
 
 
-    /* Connect to API */
+    /* Send Message & Connect to API */
     async function handleSubmit() {
 
         try {
+            /* Sanitizie input message - Not allowed empty string */
             if (message === '') {
                 throw new Error('No input message.')
             }
 
+            /* If this is not a new conversation - clear the input immediately */
             if (!isNewConversation) {
                 setMessage('')
             }
-
             setIsLoading(true)
             setError(null)
 
@@ -77,22 +79,18 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                 })
             }
 
-            /* Set the data to be sent to AI */
+            /* Set the data to be sent to AI's API */
             const chatRecordToAI = chatRecord.map((record) => {
                 return {
                     role: record.role,
                     message: record.message
                 }
             })
-
-
             const model_name = isGemini ? 'gemini' : 'gpt'
             const baseURLStr = process.env.NEXT_PUBLIC_API_URL
 
-            /* Past conversation should be from above a level which houses the conversations and chat inputs */
-            /* Use past conversation + current messages */
 
-            /* Send messages to the backend */
+            /* Send messages to the backend and get the returned response*/
             const res = await fetch(`${baseURLStr}/chat`, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -106,11 +104,11 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                 }
             })
 
+            /* Check the returned response */
             if (!res.ok) {
                 const responseData = await res.json()
                 throw new Error(responseData.detail)
             }
-
             if (!res.body) {
                 throw new Error('Unable to retrieve the body of the response in generating a message.')
             }
@@ -130,7 +128,7 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                 })
             }
 
-
+            /* Decodeing the streamed response */
             const reader = res.body.getReader()
             const decoder = new TextDecoder()
             let response_message = ''
@@ -141,7 +139,6 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                 const response_chunk = decoder.decode(value, { stream: true })
                 response_message += response_chunk
 
-                /* Receive the data */
                 /* Update the internal state for display */
                 if (setChatRecord && convId) {
                     setChatRecord((prevChatRecord) => {
@@ -159,10 +156,7 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                         }, 30)
                     })
                 }
-
-
             }
-
 
 
             /* Once reaches here: consider the conversation cycle is completed */
@@ -178,8 +172,7 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                 if (dbError) throw new Error(dbError.message)
             }
             else if (isNewConversation && !convId) {
-
-
+                /* Genereate title for this conversation if its new */
                 const titleResponse = await fetch(`${baseURLStr}/title`, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -194,8 +187,8 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                 if (!titleResponse.ok) throw new Error('Encountered difficulties in generating title for this conversation.')
 
 
-                setMessage('')
-                const generatedConvId = uuidv4()
+                setMessage('') /* Clearing message state is only done here for new converesation, not at the top */
+                const generatedConvId = uuidv4() /* Generate the conversation room id */
                 const { error: convError } = await supabase
                     .from('conversations')
                     .insert({
@@ -211,10 +204,9 @@ export default function ChatInput({ isNewConversation, convId, chatRecord, setCh
                     ])
                 if (dbError) throw new Error(dbError.message)
 
-                router.push(`/${generatedConvId}`)
+                router.push(`/${generatedConvId}`) /* For new conversation send them to the route for that conversation */
 
             }
-
             setIsLoading(false)
         }
 
