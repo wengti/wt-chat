@@ -95,24 +95,15 @@ history_normal = [
 ]
 
 
+# Test if the route is returning the expected data type
 @pytest.mark.parametrize(
     ("user_prompt", "model_name", "expected_code", "should_check_return"),
     [
-        (
-            "Hi",
-            "gemini",
-            200,
-            True,
-        ),  # HIT THE API and test the whole flow - using gemini
-        ("Hi", "gpt", 200, True),  # HIT THE API and test the whole flow - using gemini
+        ("Hi", "gemini", 200, True),  # HIT THE API
+        ("Hi", "gpt", 200, True),  # HIT THE API
         ("", "gemini", 400, False),  # Provide empty input_prompt to gemini
         ("", "gpt", 400, False),  # Provide empty input_prompt to gpt
-        (
-            "Hi",
-            "not_gemini_or_gpt",
-            422,
-            False,
-        ),  # Provide non valid model name to the flow
+        ("Hi", "not_gemini_or_gpt", 422, False),  # Non valid model name
         # /title's type - AiTitleRequest actually first proof read the type of input, which is limited to "gemini" or "gpt" -> will return 422 instead of 500
     ],
 )
@@ -141,6 +132,7 @@ def test_chat_post(
         ), f"Using Prompt: {user_prompt} at /chat with {model_name} should generate iterable and non-empty content."
 
 
+# Test if the system prompt is load correctly
 @pytest.mark.parametrize(
     ("is_serious"),
     [
@@ -179,24 +171,15 @@ def test_load_system_prompt(mocker, is_serious: bool):
 # ---------------------------------------------------------------
 #  TEST CASE: POST at /title
 # ---------------------------------------------------------------
+# Test if the route is returning the expected data type
 @pytest.mark.parametrize(
     ("prompt", "model_name", "expected_code", "should_check_return"),
     [
-        (
-            "Hi",
-            "gemini",
-            200,
-            True,
-        ),  # HIT THE API and test the whole flow - using gemini
-        ("Hi", "gpt", 200, True),  # HIT THE API and test the whole flow - using gpt
+        ("Hi", "gemini", 200, True),  # HIT THE API
+        ("Hi", "gpt", 200, True),  # HIT THE API
         ("", "gemini", 400, False),  # Provide empty input_prompt to gemini
         ("", "gpt", 400, False),  # Provide empty input_prompt to gpt
-        (
-            "Hi",
-            "not_gemini_or_gpt",
-            422,
-            False,
-        ),  # Provide non valid model name to the flow
+        ("Hi", "not_gemini_or_gpt", 422, False),  # Non valid model name
         # /title's type - AiTitleRequest actually first proof read the type of input, which is limited to "gemini" or "gpt" -> will return 422 instead of 500
     ],
 )
@@ -210,6 +193,7 @@ def test_title_post_with_various_prompt_and_model_name(
         "/title",
         json={"prompt": prompt, "model_name": model_name},
     )
+
     assert (
         response.status_code == expected_code
     ), f"Using Prompt: {prompt} at /title with {model_name} should return a response code of {expected_code}."
