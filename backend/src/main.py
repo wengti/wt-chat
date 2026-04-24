@@ -41,20 +41,19 @@ app.add_middleware(
 # Routes
 # ---------------------------------------------------------------
 
-# GET
 
-
+# GET - /
 @app.get("/")
 def root(response_model=RootResponse):
     return RootResponse()
 
 
-# POST
-# Gemini
+# POST - /chat
 @app.post("/chat")
 def sendMessageToGemini(request: AiRequest, response_model=StreamingResponse):
 
     try:
+        """Sanitize data - raise error if empty input"""
         if not request.user_prompt:
             raise HTTPException(
                 status_code=400,
@@ -93,7 +92,6 @@ def sendMessageToGemini(request: AiRequest, response_model=StreamingResponse):
 
         """ Generating response """
         """ Any function that contains yield becomes a generator, and the caller iterates over it. """
-
         return StreamingResponse(
             model.chat(
                 history=request.history,
@@ -101,6 +99,7 @@ def sendMessageToGemini(request: AiRequest, response_model=StreamingResponse):
             ),
             media_type="text/plain",
         )
+
     except HTTPException:
         raise
 
@@ -108,10 +107,12 @@ def sendMessageToGemini(request: AiRequest, response_model=StreamingResponse):
         raise HTTPException(status_code=502, detail=str(e))  # Bad Gateway
 
 
+# POST - /title
 @app.post("/title")
 def getTitleFromGemini(request: AiTitleRequest, response_model=AiTitleResponse):
 
     try:
+        """Sanitize data - raise error if empty input"""
         if not request.prompt:
             raise HTTPException(
                 status_code=400,
@@ -144,8 +145,8 @@ def getTitleFromGemini(request: AiTitleRequest, response_model=AiTitleResponse):
         if model == None:
             raise HTTPException(status_code=500, detail="Fail to create an AI client.")
 
+        """ Generate and return the title """
         title = model.generate_title(user_prompt=request.prompt)
-
         return AiTitleResponse(title=title)
 
     except HTTPException:
