@@ -27,7 +27,7 @@ execute function public.handle_new_users();
 alter policy "Only authenticated user can read their own data"
 on "public"."users"
 to authenticated
-using (auth.uid() = id)
+using (auth.uid() = id);
 
 
 /* ------------- */
@@ -39,13 +39,13 @@ using (auth.uid() = id)
 alter policy "only authenticatead can access their own conversation"
 on "public"."conversations"
 to authenticated
-using (auth.uid() = user_id)
+using (auth.uid() = user_id);
 
 /* Insert */
 alter policy "Only authenticated user can insert data for themselves"
 on "public"."conversations"
 to authenticated
-with check (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
 
 /* ------------- */
@@ -54,14 +54,14 @@ with check (auth.uid() = user_id)
 alter policy "Only authenticated user can insert data for themselves"
 on "public"."messages"
 to authenticated
-with check (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
 /* ----  Policy  ---- */
 /* Read */
 alter policy "only authenticatead can access their own message"
 on "public"."messages"
 to authenticated
-using (auth.uid() = user_id)
+using (auth.uid() = user_id);
 
 
 
