@@ -1,24 +1,25 @@
 
 # wt-chat
-A simple chat interface for user to interact with 2 different LLM endpoints. This app has the following features:
-    - Authentication and Authorization
-    - Dark / Light mode
-    - Chat with Gemini (`gemini-3-flash-preview`) or GPT (`gpt-5.4-nano`)
-    - Get a response in playful or serious manner.
-    - Generation of title for each conversation.
-    - Receiving response in chunks via Streaming.
+A simple chat interface for user to interact with 2 different LLM endpoints. This app has the following features
+
+* Authentication and Authorization
+* Dark / Light mode
+* Chat with Gemini (`gemini-3-flash-preview`) or GPT (`gpt-5.4-nano`)
+* Get a response in playful or serious manner.
+* Generation of title for each conversation.
+* Receiving response in chunks via Streaming.
 
 This application also serves as a simple project for the learning of:
 
-    - **FastAPI** with the learning outcome:
-        * https://github.com/wengti/fast-api-tutorial
-        * https://github.com/wengti/fast-api-ai-endpoint-tutorial
+* **FastAPI** with the learning outcome:
+    * https://github.com/wengti/fast-api-tutorial
+    * https://github.com/wengti/fast-api-ai-endpoint-tutorial
 
-    - **pytest** with the learning outcome:
-        * https://github.com/wengti/pytest-tutorial
+* **pytest** with the learning outcome:
+    * https://github.com/wengti/pytest-tutorial
 
-    - **docker**
-        * https://github.com/wengti/docker-tutorial
+* **docker**
+    * https://github.com/wengti/docker-tutorial
 
 
 ## Get Started
