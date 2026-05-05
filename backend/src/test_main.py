@@ -10,7 +10,6 @@ import main
 from main import app
 from src.types import HistoryEntry, RootResponse
 
-
 # ---------------------------------------------------------------
 # Initializing
 # ---------------------------------------------------------------
@@ -148,7 +147,7 @@ def test_load_system_prompt(mocker, is_serious: bool):
     mocker_playful = mocker.patch(
         "main.load_playful_prompts", return_value="Playful system prompts"
     )
-    mocker.patch("src.main.GeminiModel")  # to prevent api call
+    mocker.patch("main.GeminiModel")  # to prevent api call
 
     response = client.post(
         "/chat",
